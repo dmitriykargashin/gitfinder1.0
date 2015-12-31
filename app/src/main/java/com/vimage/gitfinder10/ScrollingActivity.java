@@ -53,7 +53,8 @@ public class ScrollingActivity extends AppCompatActivity {
         protected String doInBackground(Void... params) {
             // получаем данные с внешнего ресурса
             try {
-                URL url = new URL("http://androiddocs.ru/api/friends.json");
+                //URL url = new URL("http://androiddocs.ru/api/friends.json");
+                URL url = new URL("https://api.github.com/search/repositories?q=speedometr&sort=stars&order=desc");
 
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
@@ -84,30 +85,32 @@ public class ScrollingActivity extends AppCompatActivity {
             Log.d(LOG_TAG, strJson);
 
             JSONObject dataJsonObj = null;
-            String secondName = "";
+            //String secondName = "";
 
             try {
                 dataJsonObj = new JSONObject(strJson);
-                JSONArray friends = dataJsonObj.getJSONArray("friends");
+                JSONArray repos = dataJsonObj.getJSONArray("items");
 
                 // 1. достаем инфо о втором друге - индекс 1
-                JSONObject secondFriend = friends.getJSONObject(1);
-                secondName = secondFriend.getString("name");
-                Log.d(LOG_TAG, "Второе имя: " + secondName);
+                //JSONObject secondFriend = repos.getJSONObject(1);
+                //  secondName = secondFriend.getString("name");
+                // Log.d(LOG_TAG, "Второе имя: " + secondName);
 
                 // 2. перебираем и выводим контакты каждого друга
-                for (int i = 0; i < friends.length(); i++) {
-                    JSONObject friend = friends.getJSONObject(i);
+                for (int i = 0; i < repos.length(); i++) {
+                    JSONObject repo = repos.getJSONObject(i);
 
-                    JSONObject contacts = friend.getJSONObject("contacts");
+                    //JSONObject contacts = repo.getJSONObject("contacts");
 
-                    String phone = contacts.getString("mobile");
-                    String email = contacts.getString("email");
-                    String skype = contacts.getString("skype");
+                    String name = repo.getString("name");
+                    String url = repo.getString("html_url");
 
-                    Log.d(LOG_TAG, "phone: " + phone);
-                    Log.d(LOG_TAG, "email: " + email);
-                    Log.d(LOG_TAG, "skype: " + skype);
+                    //String email = contacts.getString("email");
+                    //String skype = contacts.getString("skype");
+
+                    Log.d(LOG_TAG, "name: " + name);
+                    Log.d(LOG_TAG, "url: " + url);
+                    //Log.d(LOG_TAG, "skype: " + skype);
                 }
 
             } catch (JSONException e) {
