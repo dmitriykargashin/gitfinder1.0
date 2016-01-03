@@ -1,5 +1,6 @@
 package com.vimage.gitfinder10;
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
@@ -9,7 +10,9 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,20 +23,31 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 
 public class ScrollingActivity extends AppCompatActivity {
 
     public static String LOG_TAG = "my_log";
+    public ListView listviewSearchResult;
+    public Context context;
+
+    ArrayList<Repository> repositories = new ArrayList<Repository>();
+    RepoAdapter repoAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_scrolling); //!!
+        setContentView(R.layout.activity_scrolling);
+        context = this;
+        // нашли наш список
+        listviewSearchResult = (ListView) findViewById(R.id.listview);
 
+        //нашли строку поиска
         final EditText searchedText;
         searchedText = (EditText) findViewById(R.id.searchText);
 
+        //обработчик нажатия кнопки ввода на строке поиска
         searchedText.setOnKeyListener(new View.OnKeyListener() {
                                           public boolean onKey(View v, int keyCode, KeyEvent event) {
                                               if (event.getAction() == KeyEvent.ACTION_DOWN &&
@@ -41,9 +55,6 @@ public class ScrollingActivity extends AppCompatActivity {
                                                   // сохраняем текст, введенный до нажатия Enter в переменную
                                                   String stringToFind = searchedText.getText().toString();
                                                   new ParseTask().execute(stringToFind);
-
-                                                  Snackbar.make(v, "Ищем  " + stringToFind, Snackbar.LENGTH_LONG)
-                                                          .setAction("Action", null).show();
 
                                                   return true;
                                               }
@@ -54,11 +65,24 @@ public class ScrollingActivity extends AppCompatActivity {
 
     }
 
+    public void ShowSnackBar(String message) {
+        Snackbar.make(findViewById(R.id.searchText), message, Snackbar.LENGTH_LONG)
+                .setAction("Action", null).show();
+
+    }
+
     private class ParseTask extends AsyncTask<String, Void, String> {
 
         HttpURLConnection urlConnection = null;
         BufferedReader reader = null;
         String resultJson = "";
+
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            ShowSnackBar("Начали поиск");
+        }
 
         @Override
         protected String doInBackground(String... params) {
@@ -77,6 +101,7 @@ public class ScrollingActivity extends AppCompatActivity {
 
                 String line;
                 while ((line = reader.readLine()) != null) {
+
                     buffer.append(line);
                 }
 
@@ -98,6 +123,8 @@ public class ScrollingActivity extends AppCompatActivity {
                 dataJsonObj = new JSONObject(strJson);
                 JSONArray repos = dataJsonObj.getJSONArray("items");
 
+                //String[] names;
+
                 for (int i = 0; i < repos.length(); i++) {
                     JSONObject repo = repos.getJSONObject(i);
 
@@ -107,8 +134,26 @@ public class ScrollingActivity extends AppCompatActivity {
                     Log.d(LOG_TAG, "name: " + name);
                     Log.d(LOG_TAG, "url: " + url);
 
+                    repositories.add(new Repository(name, 5, 0, url));
+
+                    //   names
+
                 }
 
+
+//                    ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+//                            android.R.layout.simple_list_item_1, names);
+//                    // присваиваем адаптер списку
+//                    listviewSearchResult.setAdapter(adapter);
+
+                repoAdapter = new RepoAdapter(context, repositories);
+
+                // настраиваем список
+                //ListView lvMain = (ListView) findViewById(R.id.lvMain);
+                listviewSearchResult.setAdapter(repoAdapter);
+
+
+                ShowSnackBar("Закончили поиск");
             } catch (JSONException e) {
                 e.printStackTrace();
             }
