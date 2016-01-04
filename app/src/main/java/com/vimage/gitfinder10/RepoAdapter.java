@@ -7,10 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 
@@ -56,50 +52,20 @@ public class RepoAdapter extends BaseAdapter {
             view = lInflater.inflate(R.layout.item, parent, false);
         }
 
-        Repository p = getRepo(position);
+        Repository r = getRepo(position);
 
         // заполняем View в пункте списка данными
-        ((TextView) view.findViewById(R.id.tvName)).setText(p.name);
-        ((TextView) view.findViewById(R.id.tvURL)).setText(p.url + "");
-        //((ImageView) view.findViewById(R.id.ivStars)).setImageResource(p.image);
+        ((TextView) view.findViewById(R.id.tvName)).setText(r.name);
+        ((TextView) view.findViewById(R.id.tvURL)).setText(r.url + "");
+        ((TextView) view.findViewById(R.id.tvStars)).setText(r.stars + "");
 
-        //CheckBox cbBuy = (CheckBox) view.findViewById(R.id.cbBox);
-        // присваиваем чекбоксу обработчик
-        //cbBuy.setOnCheckedChangeListener(myCheckChangList);
-        // пишем позицию
-        //cbBuy.setTag(position);
-        // заполняем данными из товаров: в корзине или нет
-        //cbBuy.setChecked(p.box);
         return view;
     }
 
-    // товар по позиции
+
     Repository getRepo(int position) {
         return ((Repository) getItem(position));
     }
 
-    // содержимое корзины
-   /* ArrayList<Repository> getBox() {
-        ArrayList<Repository> box = new ArrayList<Repository>();
-        for (Repository p : objects) {
-            // если в корзине
-            if (p.box)
-                box.add(p);
-        }
-        return box;
-    }
-    */
-
-    /*
-    // обработчик для чекбоксов
-    OnCheckedChangeListener myCheckChangList = new OnCheckedChangeListener() {
-        public void onCheckedChanged(CompoundButton buttonView,
-                                     boolean isChecked) {
-            // меняем данные товара (в корзине или нет)
-            getProduct((Integer) buttonView.getTag()).box = isChecked;
-        }
-    };
-
-    */
 }
 

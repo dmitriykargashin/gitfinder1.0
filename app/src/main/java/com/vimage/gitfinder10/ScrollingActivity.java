@@ -117,43 +117,36 @@ public class ScrollingActivity extends AppCompatActivity {
         protected void onPostExecute(String strJson) {
             super.onPostExecute(strJson);
 
+            repositories.clear();// почистим список перед поиском
             JSONObject dataJsonObj;
+
 
             try {
                 dataJsonObj = new JSONObject(strJson);
                 JSONArray repos = dataJsonObj.getJSONArray("items");
-
-                //String[] names;
 
                 for (int i = 0; i < repos.length(); i++) {
                     JSONObject repo = repos.getJSONObject(i);
 
                     String name = repo.getString("name");
                     String url = repo.getString("html_url");
+                    Integer stars = repo.getInt("stargazers_count");
+
 
                     Log.d(LOG_TAG, "name: " + name);
                     Log.d(LOG_TAG, "url: " + url);
 
-                    repositories.add(new Repository(name, 5, 0, url));
-
-                    //   names
-
+                    repositories.add(new Repository(name, stars, url));
                 }
 
-
-//                    ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-//                            android.R.layout.simple_list_item_1, names);
-//                    // присваиваем адаптер списку
-//                    listviewSearchResult.setAdapter(adapter);
 
                 repoAdapter = new RepoAdapter(context, repositories);
 
                 // настраиваем список
-                //ListView lvMain = (ListView) findViewById(R.id.lvMain);
                 listviewSearchResult.setAdapter(repoAdapter);
 
 
-                ShowSnackBar("Закончили поиск");
+                ShowSnackBar("Найдено: " + repos.length());
             } catch (JSONException e) {
                 e.printStackTrace();
             }

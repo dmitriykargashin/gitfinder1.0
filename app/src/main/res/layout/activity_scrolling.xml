@@ -11,7 +11,8 @@
         android:layout_gravity="top"
         android:inputType="text"
         android:imeOptions="actionSearch"
-        android:hint="@string/searchHint" />
+        android:hint="@string/searchHint"
+        android:textSize="25sp" />
 
     <ListView
         android:id="@+id/listview"

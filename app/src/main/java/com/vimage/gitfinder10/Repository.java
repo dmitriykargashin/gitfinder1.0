@@ -9,15 +9,13 @@ package com.vimage.gitfinder10;
 public class Repository {
 
     String name;
-    float stars;
-    int image;
+    int stars;
     String url;
 
 
-    Repository(String _name, float _stars, int _image, String _url) {
+    Repository(String _name, int _stars, String _url) {
         name = _name;
         stars = _stars;
-        image = _image;
         url = _url;
     }
 }
