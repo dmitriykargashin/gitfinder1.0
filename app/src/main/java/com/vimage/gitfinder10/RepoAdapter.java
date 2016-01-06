@@ -55,7 +55,7 @@ public class RepoAdapter extends BaseAdapter {
         Repository r = getRepo(position);
 
         // заполняем View в пункте списка данными
-        ((TextView) view.findViewById(R.id.tvName)).setText(r.name);
+        ((TextView) view.findViewById(R.id.tvName)).setText(position + 1 + ". " + r.name);
         ((TextView) view.findViewById(R.id.tvURL)).setText(r.url + "");
         ((TextView) view.findViewById(R.id.tvStars)).setText(r.stars + "");
 

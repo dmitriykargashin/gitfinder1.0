@@ -10,6 +10,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -30,8 +31,11 @@ public class ScrollingActivity extends AppCompatActivity {
     public static String LOG_TAG = "my_log";
     public ListView listviewSearchResult;
     public Context context;
+    public String firstURL;
+    public String nextURL;
+    public ParseTask taskToFind;
 
-    ArrayList<Repository> repositories = new ArrayList<Repository>();
+    ArrayList<Repository> repositories = new ArrayList<Repository>(); //тут храним список найденных репозиториев
     RepoAdapter repoAdapter;
 
     @Override
@@ -42,6 +46,24 @@ public class ScrollingActivity extends AppCompatActivity {
         context = this;
         // нашли наш список
         listviewSearchResult = (ListView) findViewById(R.id.listview);
+
+        listviewSearchResult.setOnScrollListener(new AbsListView.OnScrollListener() {
+
+            @Override
+            public void onScrollStateChanged(AbsListView arg0, int arg1) {
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                if (visibleItemCount > 0 && firstVisibleItem + visibleItemCount == totalItemCount) {
+                    taskToFind = new ParseTask();
+                    taskToFind.execute(nextURL);
+                }
+            }
+        });
+
+
+
 
         //нашли строку поиска
         final EditText searchedText;
@@ -54,7 +76,16 @@ public class ScrollingActivity extends AppCompatActivity {
                                                       (keyCode == KeyEvent.KEYCODE_ENTER)) {
                                                   // сохраняем текст, введенный до нажатия Enter в переменную
                                                   String stringToFind = searchedText.getText().toString();
-                                                  new ParseTask().execute(stringToFind);
+
+                                                  repositories.clear();// почистим список перед поиском
+                                                  repoAdapter = new RepoAdapter(context, repositories);
+                                                  listviewSearchResult.setAdapter(repoAdapter);
+
+                                                  // укажем первый адрес откуда начнём поиск
+                                                  firstURL = "https://api.github.com/search/repositories?q=" + stringToFind + "+in:name&sort=stars&order=desc";
+                                                  taskToFind = new ParseTask();
+                                                  taskToFind.execute(firstURL);
+                                                  //nextURL = taskToFind.get();
 
                                                   return true;
                                               }
@@ -76,7 +107,7 @@ public class ScrollingActivity extends AppCompatActivity {
         HttpURLConnection urlConnection = null;
         BufferedReader reader = null;
         String resultJson = "";
-
+        String nextFindedURL;
 
         @Override
         protected void onPreExecute() {
@@ -86,13 +117,16 @@ public class ScrollingActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(String... params) {
+            String link = null;
             // получаем данные с внешнего ресурса
             try {
-                URL url = new URL("https://api.github.com/search/repositories?q=" + params[0] + "+in:name&sort=stars&order=desc");
+                URL url = new URL(params[0]);
 
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
                 urlConnection.connect();
+
+                link = urlConnection.getHeaderField("Link");
 
                 InputStream inputStream = urlConnection.getInputStream();
                 StringBuffer buffer = new StringBuffer();
@@ -110,19 +144,46 @@ public class ScrollingActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            nextFindedURL = findNextURL(link);// найдём следующий адрес
+
             return resultJson;
+        }
+
+        private String findNextURL(String link) {
+            // тут будем искать строку с next и найдём адрес в этой строке
+            String next = "";
+
+            if (link == null) {
+                return next;
+            }
+
+            //находим "next" в подстроке
+            boolean hasNext = link.contains("next");
+            //вычленяем адрес из подстроки
+            if (hasNext) {
+                int pos = link.indexOf(">");
+                next = link.substring(1, pos);
+            }
+
+            return next;
         }
 
         @Override
         protected void onPostExecute(String strJson) {
             super.onPostExecute(strJson);
 
-            repositories.clear();// почистим список перед поиском
+
             JSONObject dataJsonObj;
+            String totalcount;
 
 
             try {
+                // создаём объект для нового поиска
                 dataJsonObj = new JSONObject(strJson);
+
+                totalcount = dataJsonObj.get("total_count").toString();
+
                 JSONArray repos = dataJsonObj.getJSONArray("items");
 
                 for (int i = 0; i < repos.length(); i++) {
@@ -133,20 +194,24 @@ public class ScrollingActivity extends AppCompatActivity {
                     Integer stars = repo.getInt("stargazers_count");
 
 
-                    Log.d(LOG_TAG, "name: " + name);
-                    Log.d(LOG_TAG, "url: " + url);
+                    //        Log.d(LOG_TAG, "name: " + name);
+                    //      Log.d(LOG_TAG, "url: " + url);
 
+                    //тут добавляем элемент найденное хранилище в список хранилищ
                     repositories.add(new Repository(name, stars, url));
                 }
 
 
-                repoAdapter = new RepoAdapter(context, repositories);
+                // repoAdapter = new RepoAdapter(context, repositories);
 
+                nextURL = nextFindedURL;// запомним последний следующий адрес;
+                // данные обновились, попросим адаптер обновиться
+                repoAdapter.notifyDataSetChanged();
                 // настраиваем список
-                listviewSearchResult.setAdapter(repoAdapter);
+                //listviewSearchResult.setAdapter(repoAdapter);
 
 
-                ShowSnackBar("Найдено: " + repos.length());
+                ShowSnackBar("Найдено: " + totalcount);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
