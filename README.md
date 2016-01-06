@@ -1,6 +1,6 @@
-# README #
+# Хронология разработки проекта GitFinder 1.0 #
 
-Хронология разработки проекта GitFinder 1.0
+
 
 120 мин:
 Чтение о работе с GitHub API. Работаем с форматом JSON. Строка поиска - “https://api.github.com/search/repositories?q=<что ищем>+in:name&sort=stars&order=desc”
