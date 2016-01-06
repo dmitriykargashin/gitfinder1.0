@@ -1,29 +1,47 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Хронология разработки проекта GitFinder 1.0
 
-### What is this repository for? ###
+120 мин:
+Чтение о работе с GitHub API. Работаем с форматом JSON. Строка поиска - “https://api.github.com/search/repositories?q=<что ищем>+in:name&sort=stars&order=desc”
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+60 мин:
+Понимание какой будет интерфейс, прикидки.
 
-### How do I get set up? ###
+30 мин:
+Создание репозитория с проектом на BitBucket.
+Адрес: “https://bitbucket.org/Vimage/gitfinder1.0”.
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+30 мин:
+Чтение как парсить JSON и разбор тестового примера.
 
-### Contribution guidelines ###
+30 мин: 
+Написание кода для парсинга ответа от GitHub. Ответ получается, парсится как надо.
 
-* Writing tests
-* Code review
-* Other guidelines
+Создание интерфейса: Строка для ввода текста поиска. По кнопке будем вводить логин (а может и не будем). Выводить будем в вертикальный список. Результат будет содержать: имя репозитория, количество звезд, описание, адрес для перехода к репозиторию через браузер.
 
-### Who do I talk to? ###
+140 мин:
+Разработка интерфейса, передача строки для поиска в поток поиска по GitHub. Вывод сообщений о начале поиска. Создание класса элемента репозитория.
 
-* Repo owner or admin
-* Other community or team contact
+60 мин:
+Настройка ListView
+
+90 мин:
+Нужен постраничный вывод результатов, т.к. по умолчанию выдается 30 (не более 100). Поиск решения.
+
+90 мин:
+Сделано получение следующей страницы результатов поиска. Плавная прокрутка. Надо теперь сделать, чтобы при повороте экрана список оставался.
+
+60 мин:
+Изучение работы с потоками при повороте экрана. Сделал класс контейнер для хранения нужных данных.
+30 мин:
+Окончательная доводка 
+Итого 12.3 часа затрачено
+
+
+
+
+
+
+
+
