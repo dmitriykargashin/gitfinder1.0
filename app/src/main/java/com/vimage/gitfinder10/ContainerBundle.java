@@ -11,11 +11,13 @@ public class ContainerBundle {
     public ArrayList<Repository> repositories;
     public int totalCount;
     public String nextURL;
+    public ListFindedActivity.ParseTask parseTask;
 
 
-    public ContainerBundle(ArrayList<Repository> bRepositories, int bTotalCount, String bNextURL) {
+    public ContainerBundle(ArrayList<Repository> bRepositories, int bTotalCount, String bNextURL, ListFindedActivity.ParseTask bParceTask) {
         repositories = bRepositories;
         totalCount = bTotalCount;
         nextURL = bNextURL;
+        parseTask = bParceTask;
     }
 }

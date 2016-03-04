@@ -1,10 +1,11 @@
 package com.vimage.gitfinder10;
 
+import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Menu;
@@ -12,9 +13,12 @@ import android.view.MenuItem;
 import android.widget.AbsListView;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,7 +26,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
-public class ScrollingActivity extends AppCompatActivity {
+public class ListFindedActivity extends Activity {
 
     public ListView listviewSearchResult;
     public Context context;
@@ -37,14 +41,13 @@ public class ScrollingActivity extends AppCompatActivity {
     int findedTotalCount; // сколько репозиториев всего нашли поиском
     ContainerBundle bundle; // контейнер для сохранения нужных для восстановления объектов;
 
-
     @Override
-    public Object onRetainCustomNonConfigurationInstance() {
+    public Object onRetainNonConfigurationInstance() {
         // сохраянем наш контейнер для последующего восстановления
-        super.onRetainCustomNonConfigurationInstance();
+        super.onRetainNonConfigurationInstance();
+        taskToFind.unBind(); // отвяжем старую активити
         return bundle;
     }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,12 +64,19 @@ public class ScrollingActivity extends AppCompatActivity {
         etSarchedText = (EditText) findViewById(R.id.searchText);
 
         // попытались восстановить контейнер, если пусто, то создадим список репозиториев
-        bundle = (ContainerBundle) getLastCustomNonConfigurationInstance();
+        bundle = (ContainerBundle) getLastNonConfigurationInstance();
 
         if (bundle != null) { // если было что восстановить, то восстановим
             repositories = bundle.repositories;
             findedTotalCount = bundle.totalCount;
             nextURL = bundle.nextURL;
+
+            if (bundle.parseTask != null) { // если задача поиска запущена
+                taskToFind = bundle.parseTask;
+                taskToFind.bind(this); // то приявяжем текущую активити
+            }
+
+
         } else {
             repositories = new ArrayList<>();
         }
@@ -89,7 +99,9 @@ public class ScrollingActivity extends AppCompatActivity {
                     if (taskToFind == null || taskToFind.getStatus() != AsyncTask.Status.RUNNING) // отсечем повторные запросы. если задание запущено, то не стартуем
                     {
                         taskToFind = new ParseTask();
+                        taskToFind.bind((ListFindedActivity) context); //  приявяжем текущую активити
                         taskToFind.execute(nextURL);
+
                     }
 
 
@@ -100,26 +112,26 @@ public class ScrollingActivity extends AppCompatActivity {
 
         //обработчик нажатия кнопки ввода на строке поиска
         etSarchedText.setOnKeyListener(new View.OnKeyListener() {
-                                          public boolean onKey(View v, int keyCode, KeyEvent event) {
-                                              if (event.getAction() == KeyEvent.ACTION_DOWN &&
-                                                      (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                                                  // сохраняем текст, введенный до нажатия Enter в переменную
-                                                  stringToFind = etSarchedText.getText().toString();
+                                           public boolean onKey(View v, int keyCode, KeyEvent event) {
+                                               if (event.getAction() == KeyEvent.ACTION_DOWN &&
+                                                       (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                                                   // сохраняем текст, введенный до нажатия Enter в переменную
+                                                   stringToFind = etSarchedText.getText().toString();
 
-                                                  repositories.clear();// почистим список перед поиском
+                                                   repositories.clear();// почистим список перед поиском
 
-                                                  // укажем первый адрес откуда начнём поиск, ели нужно, то следующие получаем на пролистывание списка
-                                                  firstURL = "https://api.github.com/search/repositories?q=" + stringToFind + "+in:name&sort=stars&order=desc";
+                                                   // укажем первый адрес откуда начнём поиск, ели нужно, то следующие получаем на пролистывание списка
+                                                   firstURL = "https://api.github.com/search/repositories?q=" + stringToFind + "+in:name&sort=stars&order=desc";
 
-                                                  // задание по поиску запускаем без всяких проверок
-                                                  taskToFind = new ParseTask();
-                                                  taskToFind.execute(firstURL);
-
-                                                  return true;
-                                              }
-                                              return false;
-                                          }
-                                      }
+                                                   // задание по поиску запускаем без всяких проверок
+                                                   taskToFind = new ParseTask();
+                                                   taskToFind.bind((ListFindedActivity) context); //  приявяжем текущую активити
+                                                   taskToFind.execute(firstURL);
+                                                   return true;
+                                               }
+                                               return false;
+                                           }
+                                       }
         );
 
 
@@ -127,23 +139,41 @@ public class ScrollingActivity extends AppCompatActivity {
 
     public void ShowSnackBar(String message) {
         // отбражение всплывающей подсказки
-        Snackbar.make(findViewById(R.id.searchText), message, Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show();
+        Snackbar snackbar = Snackbar.make(findViewById(R.id.searchText), message, Snackbar.LENGTH_LONG)
+                .setAction("Action", null);
+
+        View snackbarView = snackbar.getView();
+        TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+        textView.setTextColor(Color.WHITE); // сделаем цвет текста белым
+        snackbar.show();
+
 
     }
 
-    private class ParseTask extends AsyncTask<String, Void, String> {
+    static public class ParseTask extends AsyncTask<String, Void, String> {
 // класс задания поиска
 
         HttpURLConnection urlConnection = null;
         BufferedReader reader = null;
         String resultJson = "";
         String nextFindedURL;
+        ListFindedActivity activity;
+
+        // привязываем ссылку на Activity
+        void bind(ListFindedActivity bActivity) {
+            activity = bActivity;
+        }
+
+        // отвязываем
+        void unBind() {
+            activity = null;
+        }
+
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            ShowSnackBar("Поиск");
+            activity.ShowSnackBar("Поиск");
         }
 
         @Override
@@ -209,7 +239,7 @@ public class ScrollingActivity extends AppCompatActivity {
                 // создаём объект для нового поиска
                 dataJsonObj = new JSONObject(strJson);
 
-                findedTotalCount = dataJsonObj.getInt("total_count"); // количесвто найденных репозиториев
+                activity.findedTotalCount = dataJsonObj.getInt("total_count"); // количесвто найденных репозиториев
 
                 JSONArray repos = dataJsonObj.getJSONArray("items"); // массив репозиториев из ответа от севера
 
@@ -221,18 +251,18 @@ public class ScrollingActivity extends AppCompatActivity {
                     Integer stars = repo.getInt("stargazers_count"); // количество звёзд
 
                     //тут добавляем элемент найденное хранилище в список хранилищ
-                    repositories.add(new Repository(name, stars, url));
+                    activity.repositories.add(new Repository(name, stars, url));
                 }
 
-                nextURL = nextFindedURL;// запомним последний следующий адрес;
+                activity.nextURL = nextFindedURL;// запомним последний следующий адрес;
 
                 // данные обновились, попросим адаптер обновиться
-                repoAdapter.notifyDataSetChanged();
+                activity.repoAdapter.notifyDataSetChanged();
 
                 // тут сохраним наши нужные объекты
-                bundle = new ContainerBundle(repositories, findedTotalCount, nextURL);
+                activity.bundle = new ContainerBundle(activity.repositories, activity.findedTotalCount, activity.nextURL, this);
 
-                ShowSnackBar("Найдено всего: " + findedTotalCount);
+                activity.ShowSnackBar("Найдено всего: " + activity.findedTotalCount);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
